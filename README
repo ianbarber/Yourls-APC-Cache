@@ -1,0 +1,15 @@
+A caching plugin for the Yourls (http://yourls.org/) URL shortener. 
+
+To use, just take the apc-cache/plugin.php file and put in user/plugins/apc-cache and enable in the administration interface. A recent version of APC is required.
+
+This plugin is designed to remove a lot of the database traffic from YouRLS, primarily the write load from doing the logging and click tracking. We have attempted to strike a balance between keeping most information, but spilling it in some cases in the name of higher performance. 
+
+There are roughly three processes in the plugin: 
+
+Keyword Cache: We cache the keyword -> long URL look up in APC - this is done on request, and cached for about 2 minutes (this can be changed by tweaking the define)
+
+Click caching: Rather than writing to the database, we will write first to APC. We also create another cache item, with an expiry of 2 minutes (unless changed). When we can create that timer (so there never was one, or a previous one had expired) we will write the click to the database along with any other clicks that have been tracked in the cache. Practically this means the first request hits the DB, then it will at maximum before one DB write per 2 minutes for click tracking. The downside is that you are almost guaranteed to miss some clicks - if the last person to click does trigger a DB write, their click will likely never be tracked. This was more than acceptable to us. 
+
+Log caching: Similar to the click tracking, but in this case we consider all log writes as separate events in the same buffer. We use an incrementing counter to track our unwritten logs, and after a 2 minute expiry using the same mechanism as before we will flush the cached log entries to the database. Log entries can still be lost, and of course APC may clear items to free cache space at any time, or on webserver restart. 
+
+This plugin is really only for a narrow range of cases - if you want full speed it's probably best to just disable logging any of the log/click information at all, so there are no writes because of it. If you want full information, it's best to log each click. That said, please report any issues in the Github issue tracker. 
