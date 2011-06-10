@@ -4,9 +4,21 @@ To use, just take the apc-cache/plugin.php file and put in user/plugins/apc-cach
 
 This plugin is designed to remove a lot of the database traffic from YouRLS, primarily the write load from doing the logging and click tracking. We have attempted to strike a balance between keeping most information, but spilling it in some cases in the name of higher performance. 
 
-There are roughly three processes in the plugin: 
+Configuration - Define the following in your config.php to control the plugin: 
+define("APC_READ_CACHE_TIMEOUT", 360);
+- Integer number of seconds that data from the DB will be cached
+define("APC_WRITE_CACHE_TIMEOUT", 120);
+- Integer number of seconds of time to buffer incoming writes (minimum)
+define("APC_CACHE_STATS_SHUNT", "none");
+- This will cause the caching of the clicks and logredirects to be disabled, and the queries logged as normal. This is handy if you want to keep the URL caching, but still have 100% accurate stats (though the benefit of the plugin will be pretty small then).
+define("APC_CACHE_STATS_SHUNT", "drop");
+- This will cause the clicks and log redirect information to be dropped completely (a more aggressive NOSTATS) - so there will be no clicks or logredirects logged.
+
+There are roughly four processes in the plugin: 
 
 Keyword Cache: We cache the keyword -> long URL look up in APC - this is done on request, and cached for about 2 minutes (this can be changed by tweaking the define)
+
+Options Cache: Just caches the get all options query
 
 Click caching: Rather than writing to the database, we will write first to APC. We also create another cache item, with an expiry of 2 minutes (unless changed). When we can create that timer (so there never was one, or a previous one had expired) we will write the click to the database along with any other clicks that have been tracked in the cache. Practically this means the first request hits the DB, then it will at maximum before one DB write per 2 minutes for click tracking. The downside is that you are almost guaranteed to miss some clicks - if the last person to click does trigger a DB write, their click will likely never be tracked. This was more than acceptable to us. 
 

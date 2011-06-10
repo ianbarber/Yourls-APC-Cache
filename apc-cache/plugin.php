@@ -3,21 +3,59 @@
 Plugin Name: APC Cache
 Plugin URI: http://virgingroupdigital.wordpress.com
 Description: Caches most database traffic at the expense of some accuracy
-Version: 0.1
+Version: 0.2
 Author: Ian Barber <ian.barber@gmail.com>
 Author URI: http://phpir.com/
 */
 
-define('APC_CACHE_TIMEOUT', 120);
-define('APC_CACHE_LIMIT', 60*1000);
+// Verify APC is installed, suggested by @ozh
+if( !function_exists( 'apc_exists' ) ) {
+   yourls_die( 'This plugin requires the APC extension: http://pecl.php.net/package/APC' );
+}
+
+if(!defined('APC_WRITE_CACHE_TIMEOUT')) {
+	define('APC_WRITE_CACHE_TIMEOUT', 120);
+}
+if(!defined('APC_READ_CACHE_TIMEOUT')) {
+	define('APC_READ_CACHE_TIMEOUT', 360);
+}
 define('APC_CACHE_LOG_INDEX', 'cachelogindex');
 define('APC_CACHE_LOG_TIMER', 'cachelogtimer');
-define('APC_CACHE_LONG_TIMEOUT', 86400);
+if(!defined('APC_CACHE_LONG_TIMEOUT')) {
+	define('APC_CACHE_LONG_TIMEOUT', 86400);
+}
 
 yourls_add_action( 'pre_get_keyword', 'apc_cache_pre_get_keyword' );
 yourls_add_filter( 'get_keyword_infos', 'apc_cache_get_keyword_infos' );
 yourls_add_filter( 'shunt_update_clicks', 'apc_cache_shunt_update_clicks' );
 yourls_add_filter( 'shunt_log_redirect', 'apc_cache_shunt_log_redirect' );
+yourls_add_filter( 'shunt_all_options', 'apc_cache_shunt_all_options' );
+
+/**
+ * Cache the all_options database query
+ *
+ * @param bool $false 
+ * @return bool true
+ */
+function apc_cache_shunt_all_options($false) {
+	global $ydb; 
+	
+	$key = "cachealloptions";
+	if(apc_exists($key)) {
+		$ydb->option = apc_fetch($key);
+	} else {
+		// Probably this would be better if we had a filter option after get_all_options query
+		// as then we could cache without duplicating the retrieval logic. 
+		$allopt = $ydb->get_results("SELECT `option_name`, `option_value` FROM `$table` WHERE 1=1");
+
+		foreach( (array)$allopt as $option ) {
+			$ydb->option[$option->option_name] = yourls_maybe_unserialize( $option->option_value );
+		}
+		
+		apc_store($key, $ydb->option, APC_READ_CACHE_TIMEOUT);
+	}
+	return true;
+}
 
 /**
  * If the data is in the cache, stick it back into the global DB object. 
@@ -42,7 +80,7 @@ function apc_cache_pre_get_keyword($args) {
  */
 function apc_cache_get_keyword_infos($info, $keyword) {
 	// Store in cache
-	apc_store($keyword, $info, APC_CACHE_TIMEOUT);
+	apc_store($keyword, $info, APC_READ_CACHE_TIMEOUT);
 	return $info;
 }
 
@@ -55,11 +93,19 @@ function apc_cache_get_keyword_infos($info, $keyword) {
 function apc_cache_shunt_update_clicks($false, $keyword) {
 	global $ydb;
 	
+	if(defined('APC_CACHE_STATS_SHUNT')) {
+		if(APC_CACHE_STATS_SHUNT == "drop") {
+			return true;
+		} else if(APC_CACHE_STATS_SHUNT == "none"){
+			return false;
+		}
+	} 
+	
 	$keyword = yourls_sanitize_string( $keyword );
 	$timer = $keyword . "-=-timer";
 	$key = $keyword . "-=-clicks";
 	
-	if(apc_add($timer, time(), APC_CACHE_TIMEOUT)) {
+	if(apc_add($timer, time(), APC_WRITE_CACHE_TIMEOUT)) {
 		// Can add, so write right away
 		$value = 1;
 		if(apc_exists($key)) {
@@ -95,6 +141,14 @@ function apc_cache_shunt_update_clicks($false, $keyword) {
 function apc_cache_shunt_log_redirect($false, $keyword) {
 	global $ydb;
 	
+	if(defined('APC_CACHE_STATS_SHUNT')) {
+		if(APC_CACHE_STATS_SHUNT == "drop") {
+			return true;
+		} else if(APC_CACHE_STATS_SHUNT == "none"){
+			return false;
+		}
+	}
+	
 	$args = array(
 		yourls_sanitize_string( $keyword ),
 		( isset( $_SERVER['HTTP_REFERER'] ) ? yourls_sanitize_url( $_SERVER['HTTP_REFERER'] ) : 'direct' ),
@@ -120,7 +174,7 @@ function apc_cache_shunt_log_redirect($false, $keyword) {
 	apc_store(apc_cache_get_logindex($logindex), $args, APC_CACHE_LONG_TIMEOUT);
 	
 	// If we've been caching for over a certain amount do write
-	if(apc_add(APC_CACHE_LOG_TIMER, time(), APC_CACHE_TIMEOUT)) {
+	if(apc_add(APC_CACHE_LOG_TIMER, time(), APC_WRITE_CACHE_TIMEOUT)) {
 		// We can add, so lets flush the log cache
 		$key = APC_CACHE_LOG_INDEX;
 		$index = apc_fetch($key);
