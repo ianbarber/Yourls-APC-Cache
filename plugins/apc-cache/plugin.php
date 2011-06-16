@@ -3,7 +3,7 @@
 Plugin Name: APC Cache
 Plugin URI: http://virgingroupdigital.wordpress.com
 Description: Caches most database traffic at the expense of some accuracy
-Version: 0.2
+Version: 0.3
 Author: Ian Barber <ian.barber@gmail.com>
 Author URI: http://phpir.com/
 */
@@ -21,6 +21,7 @@ if(!defined('APC_READ_CACHE_TIMEOUT')) {
 }
 define('APC_CACHE_LOG_INDEX', 'cachelogindex');
 define('APC_CACHE_LOG_TIMER', 'cachelogtimer');
+define('APC_CACHE_ALL_OPTIONS', 'cache-get_all_options');
 if(!defined('APC_CACHE_LONG_TIMEOUT')) {
 	define('APC_CACHE_LONG_TIMEOUT', 86400);
 }
@@ -30,9 +31,10 @@ yourls_add_filter( 'get_keyword_infos', 'apc_cache_get_keyword_infos' );
 yourls_add_filter( 'shunt_update_clicks', 'apc_cache_shunt_update_clicks' );
 yourls_add_filter( 'shunt_log_redirect', 'apc_cache_shunt_log_redirect' );
 yourls_add_filter( 'shunt_all_options', 'apc_cache_shunt_all_options' );
+yourls_add_filter( 'get_all_options', 'apc_cache_get_all_options' );
 
 /**
- * Cache the all_options database query
+ * Return cached options is available
  *
  * @param bool $false 
  * @return bool true
@@ -40,25 +42,28 @@ yourls_add_filter( 'shunt_all_options', 'apc_cache_shunt_all_options' );
 function apc_cache_shunt_all_options($false) {
 	global $ydb; 
 	
-	$key = "cachealloptions";
+	$key = APC_CACHE_ALL_OPTIONS; 
 	if(apc_exists($key)) {
 		$ydb->option = apc_fetch($key);
-	} else {
-		// Probably this would be better if we had a filter option after get_all_options query
-		// as then we could cache without duplicating the retrieval logic. 
-		$allopt = $ydb->get_results("SELECT `option_name`, `option_value` FROM `$table` WHERE 1=1");
-
-		foreach( (array)$allopt as $option ) {
-			$ydb->option[$option->option_name] = yourls_maybe_unserialize( $option->option_value );
-		}
-		
-		apc_store($key, $ydb->option, APC_READ_CACHE_TIMEOUT);
-	}
-	return true;
+		return true;
+	} 
+	
+	return false;
 }
 
 /**
- * If the data is in the cache, stick it back into the global DB object. 
+ * Cache all_options data. 
+ *
+ * @param array $options 
+ * @return array options
+ */
+function apc_cache_get_all_options($option) {
+	apc_store(APC_CACHE_ALL_OPTIONS, $option, APC_READ_CACHE_TIMEOUT);
+	return $option;
+}
+
+/**
+ * If the URL data is in the cache, stick it back into the global DB object. 
  * 
  * @param string $args
  */
