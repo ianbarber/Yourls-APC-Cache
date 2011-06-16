@@ -32,6 +32,8 @@ yourls_add_filter( 'shunt_update_clicks', 'apc_cache_shunt_update_clicks' );
 yourls_add_filter( 'shunt_log_redirect', 'apc_cache_shunt_log_redirect' );
 yourls_add_filter( 'shunt_all_options', 'apc_cache_shunt_all_options' );
 yourls_add_filter( 'get_all_options', 'apc_cache_get_all_options' );
+yourls_add_filter( 'activated_plugin', 'apc_cache_plugin_statechange' );
+yourls_add_filter( 'deactivated_plugin', 'apc_cache_plugin_statechange' );
 
 /**
  * Return cached options is available
@@ -60,6 +62,15 @@ function apc_cache_shunt_all_options($false) {
 function apc_cache_get_all_options($option) {
 	apc_store(APC_CACHE_ALL_OPTIONS, $option, APC_READ_CACHE_TIMEOUT);
 	return $option;
+}
+
+/**
+ * Clear the options cache if a plugin is activated or deactivated
+ *
+ * @param string $plugin 
+ */
+function apc_cache_plugin_statechange($plugin) {
+        apc_delete(APC_CACHE_ALL_OPTIONS);
 }
 
 /**
