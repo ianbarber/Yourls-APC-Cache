@@ -3,7 +3,7 @@
 Plugin Name: APC Cache
 Plugin URI: http://virgingroupdigital.wordpress.com
 Description: Caches most database traffic at the expense of some accuracy
-Version: 0.3
+Version: 0.3.1
 Author: Ian Barber <ian.barber@gmail.com>
 Author URI: http://phpir.com/
 */
@@ -34,6 +34,7 @@ yourls_add_filter( 'shunt_all_options', 'apc_cache_shunt_all_options' );
 yourls_add_filter( 'get_all_options', 'apc_cache_get_all_options' );
 yourls_add_filter( 'activated_plugin', 'apc_cache_plugin_statechange' );
 yourls_add_filter( 'deactivated_plugin', 'apc_cache_plugin_statechange' );
+yourls_add_filter( 'edit_link', 'apc_cache_edit_link' );
 
 /**
  * Return cached options is available
@@ -89,8 +90,8 @@ function apc_cache_pre_get_keyword($args) {
 }
 
 /**
- * 
  * Store the keyword info in the cache
+ * 
  * @param array $info
  * @param string $keyword
  */
@@ -98,6 +99,24 @@ function apc_cache_get_keyword_infos($info, $keyword) {
 	// Store in cache
 	apc_store($keyword, $info, APC_READ_CACHE_TIMEOUT);
 	return $info;
+}
+
+/**
+ * Delete a cache entry for a keyword if that keyword is edited.
+ * 
+ * @param array $return
+ * @param string $url
+ * @param string $keyword
+ * @param string $newkeyword
+ * @param string $title
+ * @param bool $new_url_already_there
+ * @param bool $keyword_is_ok
+ */
+function apc_cache_edit_link( $return, $url, $keyword, $newkeyword, $title, $new_url_already_there, $keyword_is_ok ) {
+	if($return['status'] != 'fail') {
+		apc_delete($keyword);
+	}
+	return $return;
 }
 
 /**
