@@ -3,7 +3,7 @@
 Plugin Name: APC Cache
 Plugin URI: http://virgingroupdigital.wordpress.com
 Description: Caches most database traffic at the expense of some accuracy
-Version: 0.3.1
+Version: 0.3.2
 Author: Ian Barber <ian.barber@gmail.com>
 Author URI: http://phpir.com/
 */
@@ -28,8 +28,10 @@ if(!defined('APC_CACHE_LONG_TIMEOUT')) {
 
 yourls_add_action( 'pre_get_keyword', 'apc_cache_pre_get_keyword' );
 yourls_add_filter( 'get_keyword_infos', 'apc_cache_get_keyword_infos' );
-yourls_add_filter( 'shunt_update_clicks', 'apc_cache_shunt_update_clicks' );
-yourls_add_filter( 'shunt_log_redirect', 'apc_cache_shunt_log_redirect' );
+if(!defined('APC_CACHE_SKIP_CLICKTRACK')) {
+	yourls_add_filter( 'shunt_update_clicks', 'apc_cache_shunt_update_clicks' );
+	yourls_add_filter( 'shunt_log_redirect', 'apc_cache_shunt_log_redirect' );
+}
 yourls_add_filter( 'shunt_all_options', 'apc_cache_shunt_all_options' );
 yourls_add_filter( 'get_all_options', 'apc_cache_get_all_options' );
 yourls_add_filter( 'activated_plugin', 'apc_cache_plugin_statechange' );
