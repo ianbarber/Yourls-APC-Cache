@@ -13,6 +13,8 @@ define("APC_CACHE_STATS_SHUNT", "none");
 - This will cause the caching of the clicks and logredirects to be disabled, and the queries logged as normal. This is handy if you want to keep the URL caching, but still have 100% accurate stats (though the benefit of the plugin will be pretty small then).
 define("APC_CACHE_STATS_SHUNT", "drop");
 - This will cause the clicks and log redirect information to be dropped completely (a more aggressive NOSTATS) - so there will be no clicks or logredirects logged.
+define("APC_CACHE_SKIP_CLICKTRACK", true);
+- This will cause the plugin to take no action on click/redirect logging (if this is being handled by another plugin for example).
 
 There are roughly four processes in the plugin: 
 
