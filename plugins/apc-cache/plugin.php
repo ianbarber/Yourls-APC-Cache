@@ -84,9 +84,10 @@ function apc_cache_plugin_statechange($plugin) {
 function apc_cache_pre_get_keyword($args) {
 	global $ydb;
 	$keyword = $args[0];
+	$use_cache = isset($args[1]) ? $args[1] : true;
 	
 	// Lookup in cache
-	if(apc_exists($keyword)) {
+	if($use_cache && apc_exists($keyword)) {
 		$ydb->infos[$keyword] = apc_fetch($keyword); 	
 	}
 }
