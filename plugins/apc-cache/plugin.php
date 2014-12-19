@@ -22,6 +22,7 @@ if(!defined('APC_READ_CACHE_TIMEOUT')) {
 define('APC_CACHE_LOG_INDEX', 'cachelogindex');
 define('APC_CACHE_LOG_TIMER', 'cachelogtimer');
 define('APC_CACHE_ALL_OPTIONS', 'cache-get_all_options');
+define('APC_CACHE_INSTALLED', 'cache-installed');
 if(!defined('APC_CACHE_LONG_TIMEOUT')) {
 	define('APC_CACHE_LONG_TIMEOUT', 86400);
 }
@@ -50,6 +51,7 @@ function apc_cache_shunt_all_options($false) {
 	$key = APC_CACHE_ALL_OPTIONS; 
 	if(apc_exists($key)) {
 		$ydb->option = apc_fetch($key);
+		$ydb->installed = apc_fetch(APC_CACHE_INSTALLED);
 		return true;
 	} 
 	
@@ -64,6 +66,7 @@ function apc_cache_shunt_all_options($false) {
  */
 function apc_cache_get_all_options($option) {
 	apc_store(APC_CACHE_ALL_OPTIONS, $option, APC_READ_CACHE_TIMEOUT);
+	apc_store(APC_CACHE_INSTALLED, true, APC_READ_CACHE_TIMEOUT);
 	return $option;
 }
 
