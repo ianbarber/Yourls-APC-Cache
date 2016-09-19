@@ -1,5 +1,7 @@
 A caching plugin for the Yourls (http://yourls.org/) URL shortener. 
 
+Note: Looking for a more recently updated Yourls cache plugin with more features? Try https://github.com/tipichris/YAPCache - Chris Hastie's excellent new plugin (which includes some useful bugfixes!)
+
 To use, just take the apc-cache/plugin.php file and put in user/plugins/apc-cache, and put the cache.php file in user/. A recent version of APC is required.
 
 This plugin is designed to remove a lot of the database traffic from YouRLS, primarily the write load from doing the logging and click tracking. We have attempted to strike a balance between keeping most information, but spilling it in some cases in the name of higher performance. 
